@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  strategyforge-api:
+    build: .
+    container_name: strategyforge-api
+    ports:
+      - "8000:8000"
+    environment:
+      # GPU API Configuration (choose one)
+      # Option 1: vLLM
+      - VLLM_BASE_URL=${VLLM_BASE_URL:-http://vllm-server:8000/v1}
+      - VLLM_MODEL=${VLLM_MODEL:-meta-llama/Llama-2-7b-chat-hf}
+      
+      # Option 2: TensorRT-LLM
+      # - TENSORRT_LLM_BASE_URL=${TENSORRT_LLM_BASE_URL:-http://tensorrt-llm-server:8000/v1}
+      # - TENSORRT_LLM_MODEL=${TENSORRT_LLM_MODEL:-llama}
+      
+      # Option 3: Custom OpenAI-compatible API
+      # - CUSTOM_OPENAI_BASE_URL=${CUSTOM_OPENAI_BASE_URL:-http://gpu-api-server:8000/v1}
+      # - CUSTOM_OPENAI_MODEL=${CUSTOM_OPENAI_MODEL:-gpt-3.5-turbo}
+      
+      # Option 4: Cloud APIs (fallback)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      
+      # Application config
+      - DEBUG=${DEBUG:-False}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./outputs:/app/outputs
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    networks:
+      - strategyforge-network
+
+  # Optional: vLLM server example (uncomment if running vLLM locally)
+  # vllm-server:
+  #   image: vllm/vllm-openai:latest
+  #   container_name: vllm-server
+  #   ports:
+  #     - "8001:8000"
+  #   environment:
+  #     - MODEL=meta-llama/Llama-2-7b-chat-hf
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+  #   networks:
+  #     - strategyforge-network
+
+networks:
+  strategyforge-network:
+    driver: bridge
+
